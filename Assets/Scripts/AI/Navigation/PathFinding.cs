@@ -1,8 +1,6 @@
-﻿/*
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using WayPointType;
 
 namespace PathFinding
 {
@@ -11,7 +9,7 @@ namespace PathFinding
 		public float G; // The sum cost of getting to this way point from the starting waypoint
 		public float H; // The guessed distance from this waypoint to the end waypoint
 		public float F; // The sum of G and H
-		public Waypoint Myself;
+		public WayPoint Myself;
 		public pathNode Parent;
 
 		public void addDigits() { F = G + H; }
@@ -19,15 +17,14 @@ namespace PathFinding
 
     public static class AStar
 	{
-		public static List<Waypoint> findPath(Vector3 startPos, Vector3 endPos)
+		public static List<WayPoint> findPath(Vector3 startPos, Vector3 endPos, WayPointMap wayPointMap)
 		{
 			List<pathNode> openList = new List<pathNode>();
 			List<pathNode> closedList = new List<pathNode>();
-			List<Waypoint> finalPath = new List<Waypoint>();
-
-			WayPointManager wpMgr = WayPointManager.GetInstance();
-			Waypoint startWaypoint = wpMgr.ClosestWaypoint(startPos, WayPointManager.GetAllWayPoints(), false);
-			Waypoint endWaypoint = wpMgr.ClosestWaypoint(endPos, WayPointManager.GetAllWayPoints(), false);
+			List<WayPoint> finalPath = new List<WayPoint>();
+            
+			WayPoint startWaypoint = wayPointMap.ClosestWaypoint(startPos);
+			WayPoint endWaypoint = wayPointMap.ClosestWaypoint(endPos);
 
 			pathNode chosenNode = null;
 			pathNode first = new pathNode();
@@ -73,7 +70,7 @@ namespace PathFinding
 				}
 
 				// STANDARD OPERATION
-				List<Waypoint> connections = chosenNode.Myself.GetConnectedWayPoints();
+				List<WayPoint> connections = chosenNode.Myself.m_Connections;
 
 				for (int i = 0; i < connections.Count; ++i)
 				{
@@ -105,4 +102,3 @@ namespace PathFinding
 		}
 	}
 }
-*/

@@ -17,6 +17,24 @@ public class WayPointMap : MonoBehaviour
 
     }
 
+
+    public WayPoint ClosestWaypoint(Vector3 position)
+    {
+        float nearestDistance = float.MaxValue;
+        WayPoint nearestWaypoint = null;
+
+        foreach (WayPoint wp in m_WayPoints)
+        {
+            float dist = (position - wp.transform.position).magnitude;
+            if (dist < nearestDistance)
+            {
+                nearestDistance = dist;
+                nearestWaypoint = wp;
+            }
+        }
+        return nearestWaypoint;
+    }
+
     public void EditorSetSelected(int index)
     {
         m_SelectedWaypoint = index;
