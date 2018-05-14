@@ -24,6 +24,10 @@ public class WayPointMap : MonoBehaviour
 
     private void OnDrawGizmos()
     {
+        Gizmos.color = new Color(0.5f, 0.1f, 0.5f, 0.75f);
+        Gizmos.DrawCube(transform.position + Vector3.up, new Vector3(0.75f, 2.0f, 0.75f));
+        Gizmos.DrawSphere(transform.position + Vector3.up * 2.5f, 0.4f);
+
         if (m_WayPoints.Count > 0)
         {
             for (int i = 0; i < m_WayPoints.Count; ++i)
@@ -34,14 +38,18 @@ public class WayPointMap : MonoBehaviour
                     break;
                 }
 
-                Gizmos.color = new Color(1.0f, 0.0f, 0.0f, 1.0f);
-                Gizmos.DrawSphere(m_WayPoints[i].transform.position, 1.0f);
+                Gizmos.color = new Color(0.5f, 0.0f, 0.0f, 0.75f);
+                Gizmos.DrawCube(m_WayPoints[i].transform.position, Vector3.one);
             }
         }
     }
 
     private void OnDrawGizmosSelected()
     {
+        Gizmos.color = new Color(1.0f, 0.2f, 1.0f, 1.0f);
+        Gizmos.DrawCube(transform.position + Vector3.up, new Vector3(0.75f, 2.0f, 0.75f));
+        Gizmos.DrawSphere(transform.position + Vector3.up * 2.5f, 0.4f);
+
         if (m_WayPoints.Count > 0)
         {
             for (int i = 0; i < m_WayPoints.Count; ++i)
@@ -53,13 +61,13 @@ public class WayPointMap : MonoBehaviour
                 }
                 if (i != m_SelectedWaypoint)
                 {
-                    Gizmos.color = new Color(1.0f, 1.0f, 0.0f, 1.0f);
-                    Gizmos.DrawSphere(m_WayPoints[i].transform.position, 1.0f);
+                    Gizmos.color = new Color(1.0f, 0.0f, 0.0f, 1.0f);
+                    Gizmos.DrawCube(m_WayPoints[i].transform.position, Vector3.one);
                 }
                 else
                 {
                     Gizmos.color = new Color(0.0f, 0.0f, 1.0f, 1.0f);
-                    Gizmos.DrawSphere(m_WayPoints[i].transform.position, 1.0f);
+                    Gizmos.DrawCube(m_WayPoints[i].transform.position, Vector3.one);
                 }
             }
         }
