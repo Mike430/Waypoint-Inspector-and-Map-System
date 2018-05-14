@@ -19,7 +19,6 @@ public class WayPointMap : MonoBehaviour
 
     public void EditorSetSelected(int index)
     {
-        //Debug.Log("Setting selected to " + index);
         m_SelectedWaypoint = index;
     }
 
@@ -36,7 +35,7 @@ public class WayPointMap : MonoBehaviour
                 }
 
                 Gizmos.color = new Color(1.0f, 0.0f, 0.0f, 1.0f);
-                Gizmos.DrawSphere(transform.position + m_WayPoints[i].transform.position, 1.0f);
+                Gizmos.DrawSphere(m_WayPoints[i].transform.position, 1.0f);
             }
         }
     }
@@ -55,12 +54,12 @@ public class WayPointMap : MonoBehaviour
                 if (i != m_SelectedWaypoint)
                 {
                     Gizmos.color = new Color(1.0f, 1.0f, 0.0f, 1.0f);
-                    Gizmos.DrawSphere(transform.position + m_WayPoints[i].transform.position, 1.0f);
+                    Gizmos.DrawSphere(m_WayPoints[i].transform.position, 1.0f);
                 }
                 else
                 {
                     Gizmos.color = new Color(0.0f, 0.0f, 1.0f, 1.0f);
-                    Gizmos.DrawSphere(transform.position + m_WayPoints[i].transform.position, 1.0f);
+                    Gizmos.DrawSphere(m_WayPoints[i].transform.position, 1.0f);
                 }
             }
         }

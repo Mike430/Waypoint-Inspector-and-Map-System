@@ -6,11 +6,12 @@ using UnityEditor;
 [CustomEditor(typeof(WayPointMap))]
 public class WayPointMapInspector : Editor
 {
-    Transform m_HandleTransform;
     List<WayPointDBItem> m_InspectorWayPoints = new List<WayPointDBItem>();
     WayPointMap m_Map;
     int m_CurrentSelection;
+    bool m_DebugLoggingEnabled = false;
 
+    // UI and function code for the inspector
     public override void OnInspectorGUI()
     {
         GUILayout.Label("WayPoint Management");
@@ -28,6 +29,8 @@ public class WayPointMapInspector : Editor
             WriteWayPointsToMap();
         }
 
+        m_DebugLoggingEnabled = GUILayout.Toggle(m_DebugLoggingEnabled, "Enable Debug Logging");
+
         GUILayout.Label("WayPoints");
         if (m_InspectorWayPoints.Count == 0)
         {
@@ -37,7 +40,6 @@ public class WayPointMapInspector : Editor
 
         for (int i = 0; i < m_InspectorWayPoints.Count; ++i)
         {
-            //GUILayout.Label("WayPoint " + i);
             m_InspectorWayPoints[i].m_Collapsed = EditorGUILayout.Foldout(m_InspectorWayPoints[i].m_Collapsed, "WayPoint " + i);
             
             bool needToSave = false;
@@ -76,6 +78,7 @@ public class WayPointMapInspector : Editor
         }
     }
 
+    // Run every time the 3D viewport updates
     private void OnSceneGUI()
     {
         WayPointMap temp = (WayPointMap)target;
@@ -85,13 +88,11 @@ public class WayPointMapInspector : Editor
             WriteWayPointsToMap();
             // Clear the inspector
             m_InspectorWayPoints.Clear();
+            // Get new waypoint map
             m_Map = temp;
             // Read new map data
             ReadWayPointsToDB();
         }
-
-        //ReadWayPointsToDB(); // THIS LINE OF CODE IDENTIFIES THE BUG!!!
-        m_HandleTransform = m_Map.transform;
 
         for (int i = 0; i < m_InspectorWayPoints.Count; ++i)
         {
@@ -104,18 +105,10 @@ public class WayPointMapInspector : Editor
         Handles.Label(m_Map.transform.position, "Current Selection = " + m_CurrentSelection);
     }
 
-    //returns true if manipulated
+    // Returns true if manipulated
     private bool ShowPoint(int index)
     {
-        //Debug.Log("inspector wp count = " + m_InspectorWayPoints.Count);
-        //Debug.Log("inspector at index = " + m_InspectorWayPoints[index].ToString());
-        //if (m_InspectorWayPoints[index].m_WayPoint == null)
-        //{
-        //    Debug.Log("Error drawing handles - inspector wp count: " + m_InspectorWayPoints.Count);
-        //    return false;
-        //}
-
-        Vector3 point = m_HandleTransform.TransformPoint(m_InspectorWayPoints[index].m_WayPoint.transform.position);
+        Vector3 point = m_InspectorWayPoints[index].m_WayPoint.transform.position;
         EditorGUI.BeginChangeCheck();
         point = Handles.DoPositionHandle(point, Quaternion.identity);
         Handles.Label(point, "Waypoint: " + index);
@@ -124,12 +117,13 @@ public class WayPointMapInspector : Editor
         {
             Undo.RecordObject(m_Map, "Move Way Point");
             EditorUtility.SetDirty(m_Map);
-            m_InspectorWayPoints[index].m_WayPoint.transform.position = m_HandleTransform.InverseTransformPoint(point);
+            m_InspectorWayPoints[index].m_WayPoint.transform.position = point;
             return true;
         }
         return false;
     }
 
+    // Reads in the waypoint system from m_Map
     private void ReadWayPointsToDB()
     {
         if (m_Map == null)
@@ -166,16 +160,20 @@ public class WayPointMapInspector : Editor
             m_InspectorWayPoints.Add(newPoint);
         }
 
-        finalMapCount = m_Map.m_WayPoints.Count;
-        finalInspectorCount = m_InspectorWayPoints.Count;
-        Debug.Log("~~~ READING ~~~"
-            + "\nMap Capacity: " + m_Map.m_WayPoints.Capacity
-            + "\nFirst - Map count: " + firstMapCount
-            + "\nFirst - Insp count: " + firstInspectorCount
-            + "\nFinal - Map count: " + finalMapCount
-            + "\nFinal - Insp count: " + finalInspectorCount + "\n\n");
+        if (m_DebugLoggingEnabled)
+        {
+            finalMapCount = m_Map.m_WayPoints.Count;
+            finalInspectorCount = m_InspectorWayPoints.Count;
+            Debug.Log("~~~ READING ~~~"
+                + "\nMap Capacity: " + m_Map.m_WayPoints.Capacity
+                + "\nFirst - Map count: " + firstMapCount
+                + "\nFirst - Insp count: " + firstInspectorCount
+                + "\nFinal - Map count: " + finalMapCount
+                + "\nFinal - Insp count: " + finalInspectorCount + "\n\n");
+        }
     }
 
+    // Writes out the currect waypoint system to m_Map
     private void WriteWayPointsToMap()
     {
         if (m_Map == null)
@@ -202,14 +200,16 @@ public class WayPointMapInspector : Editor
             }
         }
 
-        finalMapCount = m_Map.m_WayPoints.Count;
-        finalInspectorCount = m_InspectorWayPoints.Count;
-
-        Debug.Log("~~~ WRITING ~~~"
-            + "\nMap Capacity: " + m_Map.m_WayPoints.Capacity
-            + "\nFirst - Map count: " + firstMapCount
-            + "\nFirst - Insp count: " + firstInspectorCount
-            + "\nFinal - Map count: " + finalMapCount
-            + "\nFinal - Insp count: " + finalInspectorCount + "\n\n");
+        if (m_DebugLoggingEnabled)
+        {
+            finalMapCount = m_Map.m_WayPoints.Count;
+            finalInspectorCount = m_InspectorWayPoints.Count;
+            Debug.Log("~~~ WRITING ~~~"
+                + "\nMap Capacity: " + m_Map.m_WayPoints.Capacity
+                + "\nFirst - Map count: " + firstMapCount
+                + "\nFirst - Insp count: " + firstInspectorCount
+                + "\nFinal - Map count: " + finalMapCount
+                + "\nFinal - Insp count: " + finalInspectorCount + "\n\n");
+        }
     }
 }
