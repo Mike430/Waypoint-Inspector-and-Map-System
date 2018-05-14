@@ -27,10 +27,16 @@ public class WayPointMap : MonoBehaviour
     {
         if (m_WayPoints.Count > 0)
         {
-            foreach (WayPoint point in m_WayPoints)
+            for (int i = 0; i < m_WayPoints.Count; ++i)
             {
+                if (m_WayPoints[i] == null)
+                {
+                    m_WayPoints.RemoveAt(i);
+                    break;
+                }
+
                 Gizmos.color = new Color(1.0f, 0.0f, 0.0f, 1.0f);
-                Gizmos.DrawSphere(transform.position + point.transform.position, 1.0f);
+                Gizmos.DrawSphere(transform.position + m_WayPoints[i].transform.position, 1.0f);
             }
         }
     }
@@ -41,6 +47,11 @@ public class WayPointMap : MonoBehaviour
         {
             for (int i = 0; i < m_WayPoints.Count; ++i)
             {
+                if (m_WayPoints[i] == null)
+                {
+                    m_WayPoints.RemoveAt(i);
+                    break;
+                }
                 if (i != m_SelectedWaypoint)
                 {
                     Gizmos.color = new Color(1.0f, 1.0f, 0.0f, 1.0f);
