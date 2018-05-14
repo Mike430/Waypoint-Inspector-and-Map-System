@@ -41,11 +41,11 @@ public class WayPointMapInspector : Editor
         for (int i = 0; i < m_InspectorWayPoints.Count; ++i)
         {
             m_InspectorWayPoints[i].m_Collapsed = EditorGUILayout.Foldout(m_InspectorWayPoints[i].m_Collapsed, "WayPoint " + i);
-            
+
             bool needToSave = false;
             bool deleteCalled = false;
             bool needRedraw = false;
-            
+
             if (m_InspectorWayPoints[i].m_Collapsed)
             {
                 GUILayout.BeginHorizontal();
@@ -144,31 +144,11 @@ public class WayPointMapInspector : Editor
 
         for (int i = 0; i < m_InspectorWayPoints.Count; ++i)
         {
-            if (ShowPoint(i))
-            {
-                m_CurrentSelection = i;
-            }
+            Vector3 point = m_InspectorWayPoints[i].m_WayPoint.transform.position;
+            Handles.Label(point, "Waypoint: " + i);
         }
         m_Map.EditorSetSelected(m_CurrentSelection);
         Handles.Label(m_Map.transform.position, "Current Selection = " + m_CurrentSelection);
-    }
-
-    // Returns true if manipulated
-    private bool ShowPoint(int index)
-    {
-        Vector3 point = m_InspectorWayPoints[index].m_WayPoint.transform.position;
-        EditorGUI.BeginChangeCheck();
-        point = Handles.DoPositionHandle(point, Quaternion.identity);
-        Handles.Label(point, "Waypoint: " + index);
-
-        if (EditorGUI.EndChangeCheck())
-        {
-            Undo.RecordObject(m_Map, "Move Way Point");
-            EditorUtility.SetDirty(m_Map);
-            m_InspectorWayPoints[index].m_WayPoint.transform.position = point;
-            return true;
-        }
-        return false;
     }
 
     // Reads in the waypoint system from m_Map
@@ -178,7 +158,7 @@ public class WayPointMapInspector : Editor
         {
             return;
         }
-        
+
         int firstMapCount = m_Map.m_WayPoints.Count;
         int firstInspectorCount = m_InspectorWayPoints.Count;
         int finalMapCount = 0;
