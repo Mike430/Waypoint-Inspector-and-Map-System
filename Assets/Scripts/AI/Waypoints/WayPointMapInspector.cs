@@ -44,6 +44,7 @@ public class WayPointMapInspector : Editor
             
             bool needToSave = false;
             bool deleteCalled = false;
+            bool needRedraw = false;
             
             if (m_InspectorWayPoints[i].m_Collapsed)
             {
@@ -63,11 +64,58 @@ public class WayPointMapInspector : Editor
                     if (GUILayout.Button("Select"))
                     {
                         m_CurrentSelection = i;
+                        needRedraw = true;
                     }
 
                     GUILayout.EndHorizontal();
 
                     m_InspectorWayPoints[i].m_WayPoint.transform.position = EditorGUILayout.Vector3Field("Position", m_InspectorWayPoints[i].m_WayPoint.transform.position);
+
+                    int newCount = EditorGUILayout.IntField("Connection count:", m_InspectorWayPoints[i].m_Connections.Count);
+                    if (newCount != m_InspectorWayPoints[i].m_Connections.Capacity)
+                    {
+                        needRedraw = true;
+                        needToSave = true;
+                        // Increase
+                        if (newCount > m_InspectorWayPoints[i].m_Connections.Count)
+                        {
+                            m_InspectorWayPoints[i].m_Connections.Capacity = newCount;
+                            while (m_InspectorWayPoints[i].m_Connections.Count < newCount)
+                            {
+                                m_InspectorWayPoints[i].m_Connections.Add(0);
+                            }
+                        }
+                        // Decrease
+                        else
+                        {
+                            while (m_InspectorWayPoints[i].m_Connections.Count > newCount)
+                            {
+                                m_InspectorWayPoints[i].m_Connections.RemoveAt(m_InspectorWayPoints[i].m_Connections.Count - 1);
+                            }
+                            m_InspectorWayPoints[i].m_Connections.Capacity = newCount;
+                        }
+                    }
+
+                    for (int j = 0; j < m_InspectorWayPoints[i].m_Connections.Count; ++j)
+                    {
+                        int old = m_InspectorWayPoints[i].m_Connections[j];
+                        m_InspectorWayPoints[i].m_Connections[j] = EditorGUILayout.IntField(m_InspectorWayPoints[i].m_Connections[j]);
+                        if (old != m_InspectorWayPoints[i].m_Connections[j])
+                        {
+                            if (m_InspectorWayPoints[i].m_Connections[j] > m_InspectorWayPoints.Count)
+                            {
+                                m_InspectorWayPoints[i].m_Connections[j] = 0;
+                            }
+
+                            needToSave = true;
+                            needRedraw = true;
+                        }
+                    }
+                }
+
+                if (needRedraw)
+                {
+                    EditorUtility.SetDirty(m_Map); // force scene redraw
                 }
 
                 if (needToSave || deleteCalled)
@@ -146,7 +194,7 @@ public class WayPointMapInspector : Editor
             for (int j = 0; j < m_Map.m_WayPoints[i].m_Connections.Count; ++j)
             {
                 int connection = 0;
-                for (int k = 0; k < m_Map.m_WayPoints.Count; ++i)
+                for (int k = 0; k < m_Map.m_WayPoints.Count; ++k)
                 {
                     if (m_Map.m_WayPoints[i].m_Connections[j] == m_Map.m_WayPoints[k])
                     {
@@ -191,12 +239,20 @@ public class WayPointMapInspector : Editor
         for (int i = 0; i < m_InspectorWayPoints.Count; ++i)
         {
             m_Map.m_WayPoints.Add(m_InspectorWayPoints[i].m_WayPoint);
+            m_Map.m_WayPoints[i].m_Connections.Clear();
 
-            for (int j = 0; j < m_InspectorWayPoints[i].m_Connections.Count; ++i)
+            if (m_InspectorWayPoints[i].m_Connections.Count > 0)
             {
-                int connectedIndex = m_InspectorWayPoints[i].m_Connections[j];
-                WayPoint connected = m_InspectorWayPoints[connectedIndex].m_WayPoint;
-                m_Map.m_WayPoints[i].m_Connections.Add(connected);
+                for (int j = 0; j < m_InspectorWayPoints[i].m_Connections.Count; ++j)
+                {
+                    int connectedIndex = m_InspectorWayPoints[i].m_Connections[j];
+
+                    if (connectedIndex < m_InspectorWayPoints.Count)
+                    {
+                        WayPoint connected = m_InspectorWayPoints[connectedIndex].m_WayPoint;
+                        m_Map.m_WayPoints[i].m_Connections.Add(connected);
+                    }
+                }
             }
         }
 

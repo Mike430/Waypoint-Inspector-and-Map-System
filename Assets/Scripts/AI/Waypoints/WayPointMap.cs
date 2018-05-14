@@ -38,6 +38,12 @@ public class WayPointMap : MonoBehaviour
                     break;
                 }
 
+                Gizmos.color = new Color(0.0f, 1.0f, 0.0f, 0.5f);
+                for (int j = 0; j < m_WayPoints[i].m_Connections.Count; ++j)
+                {
+                    Gizmos.DrawLine(m_WayPoints[i].transform.position, m_WayPoints[i].m_Connections[j].transform.position);
+                }
+
                 Gizmos.color = new Color(0.5f, 0.0f, 0.0f, 0.75f);
                 Gizmos.DrawCube(m_WayPoints[i].transform.position, Vector3.one);
             }
@@ -59,6 +65,7 @@ public class WayPointMap : MonoBehaviour
                     m_WayPoints.RemoveAt(i);
                     break;
                 }
+
                 if (i != m_SelectedWaypoint)
                 {
                     Gizmos.color = new Color(1.0f, 0.0f, 0.0f, 1.0f);
@@ -66,8 +73,14 @@ public class WayPointMap : MonoBehaviour
                 }
                 else
                 {
+                    for (int j = 0; j < m_WayPoints[i].m_Connections.Count; ++j)
+                    {
+                        Gizmos.color = Color.blue;
+                        Gizmos.DrawLine(m_WayPoints[i].transform.position, m_WayPoints[i].m_Connections[j].transform.position);
+                    }
+
                     Gizmos.color = new Color(0.0f, 0.0f, 1.0f, 1.0f);
-                    Gizmos.DrawCube(m_WayPoints[i].transform.position, Vector3.one);
+                    Gizmos.DrawCube(m_WayPoints[i].transform.position, Vector3.one * 2);
                 }
             }
         }
