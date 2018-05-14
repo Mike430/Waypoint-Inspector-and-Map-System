@@ -33,6 +33,7 @@ public class BigSnake : MonoBehaviour
         MoveAlongPath();
     }
 
+
     private void MoveAlongPath()
     {
         if (m_Path.Count > 0)
@@ -64,5 +65,12 @@ public class BigSnake : MonoBehaviour
 
         // apply torque along that axis according to the magnitude of the angle.
         m_Rigidbody.AddTorque(cross * angleDiff * m_LookTorque);
+    }
+
+
+    private void OnDrawGizmos()
+    {
+        Gizmos.color = new Color(0.8f, 0.5f, 0.5f, 1.0f);
+        Gizmos.DrawWireSphere(m_Target, 2.0f);
     }
 }
