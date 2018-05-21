@@ -66,6 +66,8 @@ public class BigSnake : MonoBehaviour
 
         // apply torque along that axis according to the magnitude of the angle.
         m_Rigidbody.AddTorque(cross * angleDiff * m_LookTorque);
+
+        transform.rotation = Quaternion.LookRotation( transform.forward, Vector3.up );
     }
 
 
