@@ -39,8 +39,8 @@ public class BigSnake : MonoBehaviour
         if (m_Path.Count > 0)
         {
             Vector3 heading = SteeringBehaviours.Steering.Seek(m_Path[m_Path.Count - 1].transform.position, transform.position, m_Speed);
-            m_Rigidbody.AddForce( heading );
-            Debug.DrawLine(transform.position, transform.position + heading * 10);
+            m_Rigidbody.AddForce(transform.forward * m_Speed);// heading );
+            Debug.DrawLine(transform.position, transform.position + m_Rigidbody.velocity * 10);
             TorqueLookRotation(heading);
             if ((m_Path[m_Path.Count - 1].transform.position - transform.position).magnitude < m_WayPointSensitivity)
             {
@@ -49,7 +49,8 @@ public class BigSnake : MonoBehaviour
         }
         else
         {
-            this.transform.position += SteeringBehaviours.Steering.Arrive(m_Target, this.transform.position, m_Speed, m_Sensitivity) * Time.deltaTime;
+            //this.transform.position += SteeringBehaviours.Steering.Arrive(m_Target, this.transform.position, m_Speed, m_Sensitivity) * Time.deltaTime;
+            m_Rigidbody.AddForce(SteeringBehaviours.Steering.Arrive(m_Target, transform.position, m_Speed, m_Sensitivity));
         }
     }
 
