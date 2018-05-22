@@ -6,10 +6,9 @@ using UnityEditor;
 [CustomEditor( typeof( WayPointMap ) )]
 public class WayPointMapInspector : Editor
 {
-    List<WayPointDBItem> m_InspectorWayPoints = new List<WayPointDBItem>( );
+    List<WayPointInspectorItem> m_InspectorWayPoints = new List<WayPointInspectorItem>( );
     WayPointMap m_Map;
     int m_CurrentSelection;
-    bool m_DebugLoggingEnabled = false;
 
     // TEXT
     // Util
@@ -17,7 +16,6 @@ public class WayPointMapInspector : Editor
     // Presentation
     string m_keyTitle = "WayPoint Management";
     string m_keyAddWaypoint = "Add WayPoint";
-    string m_keyDebugLogging = "Enable Debug Logging";
     string m_keyListName = "WayPoints";
     string m_keyNoWaypoints = "No Waypoints to inspect";
     string m_keyWaypointName = "WayPoint ";
@@ -27,7 +25,111 @@ public class WayPointMapInspector : Editor
     string m_keyPosition = "Position";
     string m_keyConnectionCountField = "Connection count:";
 
-    // UI and function code for the inspector
+
+    private bool DrawConnectionListEditor( int waypointIndex )
+    {
+        bool saveAndRedrawRequired = false;
+        int newCount = EditorGUILayout.IntField( m_keyConnectionCountField, m_InspectorWayPoints[ waypointIndex ].m_Connections.Count );
+        if ( newCount != m_InspectorWayPoints[ waypointIndex ].m_Connections.Capacity )
+        {
+            saveAndRedrawRequired = true;
+            // Increase
+            if ( newCount > m_InspectorWayPoints[ waypointIndex ].m_Connections.Count )
+            {
+                m_InspectorWayPoints[ waypointIndex ].m_Connections.Capacity = newCount;
+                while ( m_InspectorWayPoints[ waypointIndex ].m_Connections.Count < newCount )
+                {
+                    m_InspectorWayPoints[ waypointIndex ].m_Connections.Add( 0 );
+                }
+            }
+            // Decrease
+            else
+            {
+                while ( m_InspectorWayPoints[ waypointIndex ].m_Connections.Count > newCount )
+                {
+                    m_InspectorWayPoints[ waypointIndex ].m_Connections.RemoveAt( m_InspectorWayPoints[ waypointIndex ].m_Connections.Count - 1 );
+                }
+                m_InspectorWayPoints[ waypointIndex ].m_Connections.Capacity = newCount;
+            }
+        }
+
+        for ( int j = 0; j < m_InspectorWayPoints[ waypointIndex ].m_Connections.Count; ++j )
+        {
+            int old = m_InspectorWayPoints[ waypointIndex ].m_Connections[ j ];
+            m_InspectorWayPoints[ waypointIndex ].m_Connections[ j ] = EditorGUILayout.IntField( m_InspectorWayPoints[ waypointIndex ].m_Connections[ j ] );
+            if ( old != m_InspectorWayPoints[ waypointIndex ].m_Connections[ j ] )
+            {
+                if ( m_InspectorWayPoints[ waypointIndex ].m_Connections[ j ] > m_InspectorWayPoints.Count )
+                {
+                    m_InspectorWayPoints[ waypointIndex ].m_Connections[ j ] = 0;
+                }
+
+                saveAndRedrawRequired = true;
+            }
+        }
+
+        return saveAndRedrawRequired;
+    }
+
+    private void DrawInterfaceForWaypoints()
+    {
+        bool needToSave = false;
+        bool needRedraw = false;
+
+        for ( int i = 0; i < m_InspectorWayPoints.Count; ++i )
+        {
+            m_InspectorWayPoints[ i ].m_Collapsed = EditorGUILayout.Foldout( m_InspectorWayPoints[ i ].m_Collapsed, m_keyWaypointName + i );
+
+            if ( m_InspectorWayPoints[ i ].m_Collapsed )
+            {
+                GUILayout.BeginHorizontal( );
+
+                if ( GUILayout.Button( m_KeyDelete ) )
+                {
+                    WaypointDeletedSortConnections( i );
+                    GameObject temp = m_InspectorWayPoints[ i ].m_WayPoint.gameObject;
+                    m_InspectorWayPoints.RemoveAt( i );
+                    DestroyImmediate( temp );
+
+                    SaveWayPointsToCurrentMap( );
+                    continue;
+                }
+
+                if ( GUILayout.Button( m_KeyExamine ) )
+                {
+                    m_CurrentSelection = i;
+                    needRedraw = true;
+                }
+
+                if ( GUILayout.Button( m_KeyInspect ) )
+                {
+                    Selection.activeGameObject = m_InspectorWayPoints[ i ].m_WayPoint.gameObject;
+                    return;
+                }
+
+                GUILayout.EndHorizontal( );
+
+                m_InspectorWayPoints[ i ].m_WayPoint.transform.position = EditorGUILayout.Vector3Field( m_keyPosition, m_InspectorWayPoints[ i ].m_WayPoint.transform.position );
+
+                if ( DrawConnectionListEditor( i ) )
+                {
+                    needRedraw = true;
+                    needToSave = true;
+                }
+            }
+        }
+
+        if ( needRedraw )
+        {
+            EditorUtility.SetDirty( m_Map ); // This forces a scene redraw
+        }
+
+        if ( needToSave )
+        {
+            SaveWayPointsToCurrentMap( );
+        }
+    }
+
     public override void OnInspectorGUI()
     {
         GUILayout.Label( m_keyTitle );
@@ -37,16 +139,14 @@ public class WayPointMapInspector : Editor
             GameObject wp = new GameObject( );
             wp.AddComponent<WayPoint>( );
             wp.name = m_strNewObjectName;
-            wp.transform.position = m_Map.transform.position + (Vector3.up * 5);
+            wp.transform.position = m_Map.transform.position + ( Vector3.up * 5 );
 
-            WayPointDBItem wpDB = new WayPointDBItem( );
+            WayPointInspectorItem wpDB = new WayPointInspectorItem( );
             wpDB.m_WayPoint = wp.GetComponent<WayPoint>( );
 
             m_InspectorWayPoints.Add( wpDB );
-            WriteWayPointsToMap( );
+            SaveWayPointsToCurrentMap( );
         }
-
-        m_DebugLoggingEnabled = GUILayout.Toggle( m_DebugLoggingEnabled, m_keyDebugLogging );
 
         GUILayout.Label( m_keyListName );
         if ( m_InspectorWayPoints.Count == 0 )
@@ -55,128 +155,30 @@ public class WayPointMapInspector : Editor
             return;
         }
 
-        for ( int i = 0; i < m_InspectorWayPoints.Count; ++i )
-        {
-            m_InspectorWayPoints[ i ].m_Collapsed = EditorGUILayout.Foldout( m_InspectorWayPoints[ i ].m_Collapsed, m_keyWaypointName + i );
-
-            bool needToSave = false;
-            bool deleteCalled = false;
-            bool needRedraw = false;
-
-            if ( m_InspectorWayPoints[ i ].m_Collapsed )
-            {
-                GUILayout.BeginHorizontal( );
-
-                if ( GUILayout.Button( m_KeyDelete ) )
-                {
-                    WaypointDeletedSortConnections( i );
-                    needToSave = true;
-                    GameObject temp = m_InspectorWayPoints[ i ].m_WayPoint.gameObject;
-                    m_InspectorWayPoints.RemoveAt( i );
-                    DestroyImmediate( temp );
-                    deleteCalled = true;
-                }
-
-                if ( !deleteCalled )
-                {
-                    if ( GUILayout.Button( m_KeyExamine ) )
-                    {
-                        m_CurrentSelection = i;
-                        needRedraw = true;
-                    }
-
-                    if ( GUILayout.Button( m_KeyInspect ) )
-                    {
-                        Selection.activeGameObject = m_InspectorWayPoints[i].m_WayPoint.gameObject;
-                        return;
-                    }
-
-                    GUILayout.EndHorizontal( );
-
-                    m_InspectorWayPoints[ i ].m_WayPoint.transform.position = EditorGUILayout.Vector3Field( m_keyPosition, m_InspectorWayPoints[ i ].m_WayPoint.transform.position );
-
-                    int newCount = EditorGUILayout.IntField( m_keyConnectionCountField, m_InspectorWayPoints[ i ].m_Connections.Count );
-                    if ( newCount != m_InspectorWayPoints[ i ].m_Connections.Capacity )
-                    {
-                        needRedraw = true;
-                        needToSave = true;
-                        // Increase
-                        if ( newCount > m_InspectorWayPoints[ i ].m_Connections.Count )
-                        {
-                            m_InspectorWayPoints[ i ].m_Connections.Capacity = newCount;
-                            while ( m_InspectorWayPoints[ i ].m_Connections.Count < newCount )
-                            {
-                                m_InspectorWayPoints[ i ].m_Connections.Add( 0 );
-                            }
-                        }
-                        // Decrease
-                        else
-                        {
-                            while ( m_InspectorWayPoints[ i ].m_Connections.Count > newCount )
-                            {
-                                m_InspectorWayPoints[ i ].m_Connections.RemoveAt( m_InspectorWayPoints[ i ].m_Connections.Count - 1 );
-                            }
-                            m_InspectorWayPoints[ i ].m_Connections.Capacity = newCount;
-                        }
-                    }
-
-                    for ( int j = 0; j < m_InspectorWayPoints[ i ].m_Connections.Count; ++j )
-                    {
-                        int old = m_InspectorWayPoints[ i ].m_Connections[ j ];
-                        m_InspectorWayPoints[ i ].m_Connections[ j ] = EditorGUILayout.IntField( m_InspectorWayPoints[ i ].m_Connections[ j ] );
-                        if ( old != m_InspectorWayPoints[ i ].m_Connections[ j ] )
-                        {
-                            if ( m_InspectorWayPoints[ i ].m_Connections[ j ] > m_InspectorWayPoints.Count )
-                            {
-                                m_InspectorWayPoints[ i ].m_Connections[ j ] = 0;
-                            }
-
-                            needToSave = true;
-                            needRedraw = true;
-                        }
-                    }
-                }
-
-                if ( needRedraw )
-                {
-                    EditorUtility.SetDirty( m_Map ); // force scene redraw
-                }
-
-                if ( needToSave || deleteCalled )
-                {
-                    WriteWayPointsToMap( );
-                }
-            }
-        }
+        DrawInterfaceForWaypoints( );
     }
 
-    // Run every time the 3D viewport updates
+    // Unity calls this every time the 3D viewport updates or when the mouse moves over the window
     private void OnSceneGUI()
     {
         WayPointMap temp = ( WayPointMap ) target;
         if ( m_Map != temp )
         {
-            // Save
-            WriteWayPointsToMap( );
-            // Clear the inspector
+            SaveWayPointsToCurrentMap( );
             m_InspectorWayPoints.Clear( );
-            // Get new waypoint map
             m_Map = temp;
-            // Read new map data
-            ReadWayPointsToDB( );
+            ReadWayPointsIntoInspector( );
         }
 
         for ( int i = 0; i < m_InspectorWayPoints.Count; ++i )
         {
-            //Vector3 point = m_InspectorWayPoints[ i ].m_WayPoint.transform.position;
-            //Handles.Label( point, "Waypoint: " + i );
-            ShowPoint(i);
+            PresentWayPointIn3DView( i );
         }
         m_Map.EditorSetSelected( m_CurrentSelection );
         Handles.Label( m_Map.transform.position, "Current Selection = " + m_CurrentSelection );
     }
 
-    private void ShowPoint( int index )
+    private void PresentWayPointIn3DView( int index )
     {
         if ( m_CurrentSelection == index )
         {
@@ -204,51 +206,38 @@ public class WayPointMapInspector : Editor
     {
         for ( int i = 0; i < m_InspectorWayPoints.Count; ++i )
         {
-            if ( i != index )
+            if ( i == index )
             {
-                for ( int j = 0; j < m_InspectorWayPoints[ i ].m_Connections.Count; ++j )
+                continue;
+            }
+
+            for ( int j = 0; j < m_InspectorWayPoints[ i ].m_Connections.Count; ++j )
+            {
+                if ( m_InspectorWayPoints[ i ].m_Connections[ j ] == index )
                 {
-                    /*if ( i == index - 1 &&
-                        m_InspectorWayPoints[ i ].m_Connections[ j ] == index &&
-                        index != m_InspectorWayPoints.Count - 1)
-                    {
-                        // This is the one circumstance in which we do not wish to drop the waypoint index
-                        // wp0 ---> wp1 ---> wp2
-                        // delete wp1
-                        // wp0 ---> wp2
-                    }*/
-                    if ( m_InspectorWayPoints[ i ].m_Connections[ j ] == index )
-                    {
-                        m_InspectorWayPoints[ i ].m_Connections.RemoveAt( j );
-                        --j;// re evaluate this index for the next if statement
-                    }
-                    else if ( m_InspectorWayPoints[ i ].m_Connections[ j ] >= index )
-                    {
-                        m_InspectorWayPoints[ i ].m_Connections[ j ] -= 1;
-                    }
+                    m_InspectorWayPoints[ i ].m_Connections.RemoveAt( j );
+                    --j;// re evaluate this index for the next if statement
+                }
+                else if ( m_InspectorWayPoints[ i ].m_Connections[ j ] >= index )
+                {
+                    m_InspectorWayPoints[ i ].m_Connections[ j ] -= 1;
                 }
             }
         }
     }
 
-    // Reads in the waypoint system from m_Map
-    private void ReadWayPointsToDB()
+    private void ReadWayPointsIntoInspector()
     {
         if ( m_Map == null )
         {
             return;
         }
 
-        int firstMapCount = m_Map.m_WayPoints.Count;
-        int firstInspectorCount = m_InspectorWayPoints.Count;
-        int finalMapCount = 0;
-        int finalInspectorCount = 0;
-
         m_InspectorWayPoints.Clear( );
 
         for ( int i = 0; i < m_Map.m_WayPoints.Count; ++i )
         {
-            WayPointDBItem newPoint = new WayPointDBItem( );
+            WayPointInspectorItem newPoint = new WayPointInspectorItem( );
             newPoint.m_WayPoint = m_Map.m_WayPoints[ i ];
 
             for ( int j = 0; j < m_Map.m_WayPoints[ i ].m_Connections.Count; ++j )
@@ -267,32 +256,14 @@ public class WayPointMapInspector : Editor
 
             m_InspectorWayPoints.Add( newPoint );
         }
-
-        if ( m_DebugLoggingEnabled )
-        {
-            finalMapCount = m_Map.m_WayPoints.Count;
-            finalInspectorCount = m_InspectorWayPoints.Count;
-            Debug.Log( "~~~ READING ~~~"
-                + "\nMap Capacity: " + m_Map.m_WayPoints.Capacity
-                + "\nFirst - Map count: " + firstMapCount
-                + "\nFirst - Insp count: " + firstInspectorCount
-                + "\nFinal - Map count: " + finalMapCount
-                + "\nFinal - Insp count: " + finalInspectorCount + "\n\n" );
-        }
     }
 
-    // Writes out the currect waypoint system to m_Map
-    private void WriteWayPointsToMap()
+    private void SaveWayPointsToCurrentMap()
     {
         if ( m_Map == null )
         {
             return;
         }
-
-        int firstMapCount = m_Map.m_WayPoints.Count;
-        int firstInspectorCount = m_InspectorWayPoints.Count;
-        int finalMapCount = 0;
-        int finalInspectorCount = 0;
 
         m_Map.m_WayPoints.Clear( );
         m_Map.m_WayPoints.Capacity = m_InspectorWayPoints.Count;
@@ -314,18 +285,6 @@ public class WayPointMapInspector : Editor
                     }
                 }
             }
-        }
-
-        if ( m_DebugLoggingEnabled )
-        {
-            finalMapCount = m_Map.m_WayPoints.Count;
-            finalInspectorCount = m_InspectorWayPoints.Count;
-            Debug.Log( "~~~ WRITING ~~~"
-                + "\nMap Capacity: " + m_Map.m_WayPoints.Capacity
-                + "\nFirst - Map count: " + firstMapCount
-                + "\nFirst - Insp count: " + firstInspectorCount
-                + "\nFinal - Map count: " + finalMapCount
-                + "\nFinal - Insp count: " + finalInspectorCount + "\n\n" );
         }
     }
 }

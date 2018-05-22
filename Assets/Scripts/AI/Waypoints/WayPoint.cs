@@ -4,5 +4,5 @@ using UnityEngine;
 
 public class WayPoint : MonoBehaviour
 {
-    public List<WayPoint> m_Connections = new List<WayPoint>();
+    public List<WayPoint> m_Connections = new List<WayPoint>( );
 }

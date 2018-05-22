@@ -2,15 +2,15 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-class WayPointDBItem
+class WayPointInspectorItem
 {
     public bool m_Collapsed;
     public List<int> m_Connections;
     public WayPoint m_WayPoint;
 
-    public WayPointDBItem()
+    public WayPointInspectorItem()
     {
         m_Collapsed = false;
-        m_Connections = new List<int>();
+        m_Connections = new List<int>( );
     }
 }
